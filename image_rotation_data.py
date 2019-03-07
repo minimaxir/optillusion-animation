@@ -1,9 +1,8 @@
 import os
 import io
-import json
+import csv
 import tqdm
 from PIL import Image
-from collections import OrderedDict
 from google.cloud import vision
 from google.cloud.vision import types
 
@@ -12,13 +11,6 @@ os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'gcp_secret.json'
 phi_step = 1
 image_path = "duckorrabbit.png"
 output_path = "/Volumes/Extreme 510/Data/optillusion-animation/rotated_images"
-
-
-def labels_to_dict(label_annotations):
-    label_scores = {}
-    for ann in label_annotations:
-        label_scores[ann.description] = ann.score
-    return label_scores
 
 
 def get_rotated_image_labels(client, image, bg, phi):
@@ -44,13 +36,12 @@ image = Image.open(image_path).convert('RGBA')
 bg = Image.new('RGBA', image.size, (255,) * 4)
 client = vision.ImageAnnotatorClient()
 
-results = OrderedDict()
 t = tqdm.tqdm(range(0, 360, phi_step))
 
-for phi in t:
-    r = get_rotated_image_labels(client, image, bg, phi)
-    labels = labels_to_dict(r.label_annotations)
-    results[phi] = labels
-
-with open('image_rot_results.json', 'w') as f:
-    json.dump(results, f)
+with open('image_rot_results.csv', 'w') as f:
+    w = csv.writer(f)
+    w.writerow(['phi', 'label', 'score'])
+    for phi in t:
+        r = get_rotated_image_labels(client, image, bg, phi)
+        for ann in r.label_annotations:
+            w.writerow([phi, ann.description, ann.score])
