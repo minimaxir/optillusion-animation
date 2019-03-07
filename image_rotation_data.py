@@ -9,7 +9,7 @@ from google.cloud.vision import types
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'gcp_secret.json'
 
-phi_step = 120
+phi_step = 1
 image_path = "duckorrabbit.png"
 output_path = "/Volumes/Extreme 510/Data/optillusion-animation/rotated_images"
 
@@ -24,7 +24,7 @@ def labels_to_dict(label_annotations):
 def get_rotated_image_labels(client, image, bg, phi):
 
     # https://stackoverflow.com/a/5253554
-    rot = image.rotate(phi)
+    rot = image.rotate(-phi)   # clockwise
     bg = Image.new('RGBA', rot.size, (255,) * 4)
     image_tf = Image.composite(rot, bg, rot)
 
