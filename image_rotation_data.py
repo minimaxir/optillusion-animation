@@ -17,7 +17,6 @@ def get_rotated_image_labels(client, image, bg, phi):
 
     # https://stackoverflow.com/a/5253554
     rot = image.rotate(-phi)   # clockwise
-    bg = Image.new('RGBA', rot.size, (255,) * 4)
     image_tf = Image.composite(rot, bg, rot)
 
     filename = str(phi) + '.png'
