@@ -1,0 +1,141 @@
+---
+title: "Is it a Duck or a Rabbit? For Google Cloud Vision, it depends on how the image is rotated."
+author: "Max Woolf (@minimaxir)"
+date: "2019-03-06"
+output:
+  html_notebook:
+    highlight: tango
+    mathjax: null
+    number_sections: yes
+    theme: spacelab
+    toc: True
+---
+
+This notebook is licensed under the MIT License. If you use the code or data visualization designs contained within this notebook, it would be greatly appreciated if proper attribution is given back to this notebook and/or myself. Thanks! :)
+
+```{r}
+library(tidyverse)
+library(gganimate)
+library(scales)
+
+sessionInfo()
+```
+
+```{r}
+theme_set(theme_minimal(base_size=25, base_family="Source Sans Pro") +
+            theme(plot.title = element_text(family="Source Sans Pro Bold", margin=margin(t = -0.1, b = 0.1, unit='cm'), size=40),
+                  axis.title.x = element_text(),
+                  axis.title.y = element_text(),
+                  axis.text.y = element_text(family="Roboto Condensed", size=30),
+                  axis.text.x = element_text(family="Roboto Condensed"),
+                  plot.subtitle = element_text(family="Source Sans Pro Semibold", color="#969696"),
+                  plot.caption = element_text(color="#969696"),
+                  legend.title = element_text(),
+                  legend.key.width = unit(0.25, unit='cm')))
+```
+
+
+```{r}
+df <- read_csv('image_rot_results.csv')
+```
+
+```{r}
+duck_labels <- c("Duck", "Beak", "Bird", "Water bird", "Ducks, geese and swans")
+rabbit_labels <- c("Hare", "Rabbit", "Domestic rabbit", "Mountain Cottontail", "Rabbits and Hares")
+
+df_sub <- df %>%
+      mutate(class = factor(case_when(
+        label %in% duck_labels ~ "Duck",
+        label %in% rabbit_labels ~ "Rabbit"
+      ), levels=c("Duck", "Rabbit")),
+      score_format = ifelse(score > 0.1, percent(score, accuracy=1), "")
+      ) %>%
+      group_by(phi, class) %>%
+      filter(score == max(score), class != "Neither")
+
+df_sub2 <- data.frame(phi=0:359, score=0) %>% crossing(class=c("Duck", "Rabbit")) %>% left_join(df_sub, by=c("phi" = "phi", "class" = "class")) %>%
+  mutate(score_norm = ifelse(is.na(score.y), 0, score.y),
+    score_mod = ifelse(class == "Duck", score_norm, -score_norm),
+    class = factor(class, levels=c("Duck", "Rabbit")))
+```
+
+Add co
+
+```{r}
+
+anim <- ggplot(df_sub2 %>% filter(phi<=179), aes(x=fct_rev(class), y=score_norm, fill=fct_rev(class), label=score_format)) +
+  geom_bar(stat="identity", width=0.5) +
+  #geom_text(nudge_y=-0.25, color="white", family="Roboto Condensed", size=20) +
+  scale_y_continuous(labels=percent_format(accuracy=1)) +
+  scale_fill_brewer(palette="Set1", guide=F) +
+  coord_flip()  +
+  labs(title='Duck or Rabbit?',
+       y='Probability') +
+  theme(
+        panel.grid.minor = element_blank(),
+        axis.title.y = element_blank()) +
+  transition_states(phi, transition_length=0)
+
+anim_save(
+  'bar1.mp4',
+  anim,
+  renderer = ffmpeg_renderer(format = ".mp4"),
+  width = 1920/2, height = 1080/2,
+  nframes = 180
+  #duration = 360/30
+)
+```
+
+```{r}
+
+anim <- ggplot(df_sub2 %>% filter(phi>=180), aes(x=fct_rev(class), y=score_norm, fill=fct_rev(class), label=score_format)) +
+  geom_bar(stat="identity", width=0.5) +
+  #geom_text(nudge_y=-0.25, color="white", family="Roboto Condensed", size=20) +
+  scale_y_continuous(labels=percent_format(accuracy=1)) +
+  scale_fill_brewer(palette="Set1", guide=F) +
+  coord_flip()  +
+  labs(title='Duck or Rabbit?',
+       y='Probability') +
+  theme(
+        panel.grid.minor = element_blank(),
+        axis.title.y = element_blank()) +
+  transition_states(phi, transition_length=0)
+
+anim_save(
+  'bar2.mp4',
+  anim,
+  renderer = ffmpeg_renderer(format = ".mp4"),
+  width = 1920/2, height = 1080/2,
+  nframes = 180
+  #duration = 360/30
+)
+```
+
+
+```{r}
+
+anim <- ggplot(df_sub2, aes(x=phi, y=score_mod, color=fct_rev(class), fill=fct_rev(class))) +
+  geom_area(stat="identity", alpha=0.5, size=0.5) +
+  geom_hline(yintercept=0, color="black", size=2) +
+  scale_color_brewer(palette="Set1", guide=F) +
+  scale_fill_brewer(palette="Set1", guide=F) +
+  scale_x_continuous(labels = function(x) {paste0(x, "°")}, breaks=seq(0, 360, 45)) +
+  scale_y_continuous(limits=c(-1, 1), breaks=c(-1, 0, 1), labels=c("100%", "0", "100%")) +
+  labs(x="Rotation in degrees (Clockwise)") +
+  theme(
+        panel.grid.minor = element_blank(),
+        axis.title.y = element_blank()) +
+  transition_reveal(phi)
+
+anim_save(
+  'area.mp4',
+  anim,
+  renderer = ffmpeg_renderer(format = ".mp4"),
+  width = 1920/2, height = 1080/2,
+  nframes=360
+)
+```
+
+The images were rendered using:
+
+`ffmpeg  -i %d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p out.mp4`
