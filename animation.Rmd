@@ -1,5 +1,5 @@
 ---
-title: "Is it a Duck or a Rabbit? For Google Cloud Vision, it depends on how the image is rotated."
+title: "Is it a Duck or a Rabbit? For Google Cloud Vision, it depends how the image is rotated."
 author: "Max Woolf (@minimaxir)"
 date: "2019-03-06"
 output:
