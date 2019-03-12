@@ -1,4 +1,6 @@
-# modeling-link-aggregators
+# Rabbit or Duck? It depends on how the image is rotated.
+
+![](duckorrabbit.png)
 
 Python code to submit rotated images to the Cloud Vision API + R code for visualizing it. This repository was used to create [this animation](https://twitter.com/minimaxir/status/1103676561809539072).
 
